@@ -1,17 +1,11 @@
 $(document).ready(function() {
     if(Hls.isSupported()) {
-        var lobbyId = window.location.pathname.substring(1);
-    
-        var video = document.getElementById('video');
-        var hls = new Hls();
-    
-        hls.loadSource(video.currentSrc);
-        hls.attachMedia(video);
+        var lobbyId = getCookie('id') || window.location.pathname.split('/')[2];
+
+        changeSource(video.currentSrc)
     
         var socket = io();
         socket.emit('lobby-id', lobbyId);
-    
-        var paused = true;
     
         $(video).on('pause', () => {
             socket.emit('pause', {id: lobbyId, timestamp: video.currentTime})
@@ -27,10 +21,32 @@ $(document).ready(function() {
         })
     
         socket.on('play', () => {
+            console.log("OLA")
             video.play();
+        })
+
+        socket.on('change', (videoEp) => {
+            changeSource(videoEp)
+        })
+
+        socket.on('exit', () => {
+            location.pathname = ""
+        })
+
+        $('.anime-ep').click((anime) => {
+            socket.emit('change', {id: lobbyId, episodeId: anime.target.attributes.value.nodeValue})
         })
     }
 })
+
+function changeSource(source) {
+    let vid = document.getElementById('video');
+    if (this.hls) { this.hls.destroy(); }
+    this.hls = new Hls();
+    this.hls.loadSource(source);
+    this.hls.attachMedia(vid);
+    this.hls.on(Hls.Events.MANIFEST_PARSED, () => { });
+}
 
 function getCookie(cookieName) {
     let cookie = {};
