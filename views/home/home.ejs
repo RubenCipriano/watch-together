@@ -1,0 +1,36 @@
+<html>
+    <head>
+        <title>Watch Anime Together</title>
+        <link rel="stylesheet" href="css/bootstrap.min.css">
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+        <div class="container-fluid d-flex display-column justify-content-center">
+            <div class="row justify-content-center">
+                <div class="col-6 d-flex justify-content-center display-column">
+                    <form name="form" method="get" action="/">
+                        <input name="search" type="text" class="type-message" placeholder="Search for Anime">
+                        <button>Search</button>
+                    </form>
+                </div>
+            </div>
+            
+            <% if(locals.animes) { %> 
+                <div class="row">
+                <% for(var i = 0; i < animes.length; i++) {%>
+                    <div class="col-1">
+                        <div class="card anime-card" onclick="postAnimeId('<%= animes[i].animeId %>')">
+                            <img class="card-img-top" src="<%= animes[i].animeImg %>">
+                            <div class="card-body">
+                                <h5 class="card-title"><%= animes[i].animeTitle %></h5>
+                            </div>
+                        </div>
+                    </div>
+                <% } %>
+                </div>
+            <% } %>
+        </div>
+        <script src="https://code.jquery.com/jquery-3.6.1.min.js" integrity="sha256-o88AwQnZB+VDvE9tvIXrMQaPlFFSUTR+nldQm1LuPXQ=" crossorigin="anonymous"></script>
+        <script src="js/cookie.maker.js"></script>
+    </body>
+</html>
