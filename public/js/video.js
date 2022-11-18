@@ -2,7 +2,7 @@ $(document).ready(function() {
     if(Hls.isSupported()) {
         var lobbyId = getCookie('id') || window.location.pathname.split('/')[2];
 
-        changeSource(video.currentSrc)
+        if(!video.currentSrc.endsWith('mp4')) changeSource(video.currentSrc)
     
         var socket = io();
         socket.emit('lobby-id', lobbyId);
@@ -26,7 +26,8 @@ $(document).ready(function() {
         })
 
         socket.on('change', (videoEp) => {
-            changeSource(videoEp)
+            if(!videoEp.endsWith('mp4')) changeSource(videoEp)
+            else video.currentSrc = videoEp;
         })
 
         socket.on('exit', () => {
