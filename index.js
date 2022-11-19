@@ -20,6 +20,7 @@ const API = "https://api.consumet.org/anime/enime";
 // set the view engine to ejs
 app.set('view engine', 'ejs');
 
+app.set('views', __dirname + '/../views');
 app.use(express.static(__dirname + '/public'));
 
 app.use(cookieParser());
