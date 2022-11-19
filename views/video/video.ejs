@@ -17,7 +17,7 @@
             </div>
             <div class="row main-show">
                 <div class="col-lg-10 col-sm-12">
-                    <video src="<%= animeEp %>" id="video" controls preload="auto" data-setup='{}'></video>
+                    <video src="<%= animeStreamUrl %>" id="video" controls preload="auto" data-setup='{}'></video>
                     <div class="skip-button">
                         <h4>Skip</h4>
                     </div>
@@ -36,9 +36,9 @@
                 </div>
             </div>
             <div class="anime-eps">
-                <% if( locals.animeEps ) { 
-                    for(var i = 0; i < animeEps.length; i++) {%>
-                        <a class="anime-ep" value="<%= animeEps[i].id %>"><%= animeEps[i].number %></a>
+                <% if( locals.animeEpisodes ) { 
+                    for(var i = 0; i < animeEpisodes.length; i++) {%>
+                        <a class="anime-ep" value="<%= animeEpisodes[i].id %>"><%= animeEpisodes[i].number %></a>
                     <% } %>
                 <% } %>
             </div>

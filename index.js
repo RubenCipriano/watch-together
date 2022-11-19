@@ -35,10 +35,10 @@ app.get('/', async (req, res) => {
 
     lobbies.forEach((lobby, key) => {
         var obj = {}
-        if(lobby.animeName) obj.title = lobby.animeName;
         if(lobby.episode) obj.episode = lobby.episode.title;
         if(lobby.sockets) obj.size = lobby.sockets.length;
-        if(lobby.episodes) obj.episodeCount = lobby.episodes.length;
+        if(lobby.animeDetails.title) obj.title = lobby.animeDetails.title;
+        if(lobby.animeDetails.episodes) obj.episodeCount = lobby.animeDetails.episodes.length;
         obj.id = key;
         
         lobbiesArray.push(obj)
@@ -47,96 +47,141 @@ app.get('/', async (req, res) => {
 })
 
 app.get('/search', async (req, res) => {
+    // If there is no selected
     if(!req.query.selected) {
-        var animeSearched = await searchAnime(req.query.search);
-        if(animeSearched.length == 1) {
-            var adminPassword = generateId();
-            var lobbyId = generateId();
-            lobbies.set(lobbyId, { animeName: req.query.search, animeId: animeSearched[0].id, adminPassword: adminPassword })
-            res.redirect(`/lobby/${lobbyId}/${adminPassword}`)
-        } else {
-            res.render('home/home', { animes: animeSearched })
-        }
+
+        // Search for animes
+        searchAnime(req.query.search).then((animeSearched) => {
+            
+            // If we only get 1 anime from the search, we will reproduce it 
+            if(animeSearched.length == 1) {
+
+                // Creating an admin password, and a lobby id
+                var adminPassword = generateId();
+                var lobbyId = generateId();
+
+                // Set the lobby id and the animeSearchId (For later use)
+                lobbies.set(lobbyId, { animeSearchId: animeSearched[0].id, adminPassword: adminPassword })
+                res.redirect(`/lobby/${lobbyId}/${adminPassword}`)
+            } else {
+                res.render('home/home', { animes: animeSearched })
+            }
+        }).catch(() => {
+            res.redirect('/')
+        })
     } else {
+        // Creating an admin password, and a lobby id
         var adminPassword = generateId();
         var lobbyId = generateId();
-        lobbies.set(lobbyId, {animeId: req.query.selected,animeName: req.query.search, adminPassword: adminPassword})
+
+        // Set the lobby id and the animeSearchId (For later use)
+        lobbies.set(lobbyId, {animeSearchId: req.query.selected, adminPassword: adminPassword})
         res.redirect(`/lobby/${lobbyId}/${adminPassword}`)
     }
 })
 
+// Lobby redirect to lobby/spectate
 app.get('/lobby/:lobby/', (req, res) => res.redirect(`/lobby/${req.params.lobby}/spectate`))
 
 
 app.get('/lobby/:lobby/:admin', async (req, res) => {
     var animeLobbyAdmin = lobbies.get(req.params.lobby);
 
+    // There is no Lobby
     if(!animeLobbyAdmin) return res.redirect('/')
 
+    // If the animeLobbyPassword Admin is wrong we redirect the user to the spectate section, which has URL and ShowInfo (cannot change episodes)
     if(animeLobbyAdmin.adminPassword != req.params.admin) {
+
+        // Check if is spectating, if not, redirect to spectate
         if(req.params.admin == 'spectate') {
+            res.render('video/video', { animeStreamUrl: animeLobbyAdmin.animeStreamUrl, animeShowInfo: animeLobbyAdmin.episode })
+        } else {
+            res.redirect(`/lobby/${req.params.lobby}/spectate`)
+        }
+    } else {
+
+        // Check if anime details in anime lobby
+        if(!animeLobbyAdmin.animeDetails) {
+            animeLobbyAdmin.animeDetails = await getAnimeDetails(animeLobbyAdmin.animeSearchId) || {};
+            if(animeLobbyAdmin.animeDetails && animeLobbyAdmin.animeDetails != {}) animeLobbyAdmin.episode = animeLobbyAdmin.animeDetails.episodes[0]
+        }
+
+        // If First time entering get stream URL, else just get it from the admin
+        if(!animeLobbyAdmin.animeStreamUrl) {
             axios({method: 'get', url: `${API}/watch?episodeId=${animeLobbyAdmin.episode.id}`, timeout: 10000}).then((response2) => {
-                res.render('video/video', { animeEp: response2.data.sources[0].url, animeShowInfo: animeLobbyAdmin.episode })
+                animeLobbyAdmin.animeStreamUrl = response2.data.sources[0].url
+                res.render('video/video', { animeStreamUrl: animeLobbyAdmin.animeStreamUrl, animeEps: animeLobbyAdmin.animeDetails.episodes, animeShowInfo: animeLobbyAdmin.episode })
             }).catch((err) => {
                 lobbies.delete(req.params.lobby)
                 res.redirect('/')
             });
         } else {
-            res.redirect(`/lobby/${req.params.lobby}/spectate`)
+            res.render('video/video', { animeStreamUrl: animeLobbyAdmin.animeStreamUrl, animeEps: animeLobbyAdmin.animeDetails.episodes, animeShowInfo: animeLobbyAdmin.episode })
         }
-    } else {
-        if(animeLobbyAdmin.animeId) {
-            var animeDetails = await getAnimeDetails(animeLobbyAdmin.animeId);
-            if(animeDetails) {
-                animeLobbyAdmin.episodes = animeDetails.episodes
-                animeLobbyAdmin.episode = animeDetails.episodes[0]
-            }
-        }
-        axios({method: 'get', url: `${API}/watch?episodeId=${animeLobbyAdmin.episode.id}`, timeout: 10000}).then((response2) => {
-            res.render('video/video', { animeEp: response2.data.sources[0].url, animeEps: animeLobbyAdmin.episodes, animeShowInfo: animeLobbyAdmin.episode })
-        }).catch((err) => {
-            lobbies.delete(req.params.lobby)
-            res.redirect('/')
-        });
     }
 })
 
+// Creates a random lobby with a random anime
 app.get('/random', async (req, res) => {
+
+    // Read the anime file (MAL Animes)
     if(animes == null) animes = fs.readFileSync('anime-offline-database.json')
 
+    // Create a random lobby Id and Admin Password
     var randomLobbyId = generateId();
     var randomAdminId = generateId();
 
+    // Parse all the data
     var allAnimes = JSON.parse(animes).data;
 
+    // Anime that will be getted
     var animeSearched = []
 
+    // While anime is not getted (There is no anime in API), keep looking
     while(animeSearched.length == 0) {
         var randomAnime = allAnimes[between(0, allAnimes.length)];
-        animeSearched = await searchAnime(randomAnime.title);
+        animeSearched = await searchAnime(randomAnime.title) || [];
     }
 
-    var animeDetails = await getAnimeDetails(animeSearched[between(0, animeSearched.length)].animeId);
-    lobbies.set(randomLobbyId, {adminPassword: randomAdminId, animeEps: animeDetails.episodes, animeEp: animeDetails.episodesList[0].url, animeShowInfo: animeLobbyAdmin.episode, sockets: []})
-    
-    res.send({lobby: randomLobbyId, data: lobbies.get(randomLobbyId)})
+    // Get details of a random anime
+    var animeDetails = await getAnimeDetails(animeSearched[between(0, animeSearched.length)].id);
 
-    if(req.query.closetime) {
-        setTimeout(() => {
-            var lobby = lobbies.get(randomLobbyId);
-            lobby.sockets.forEach((socket) => socket.emit('exit'));
+    // Get the streamable url from the anime
+    axios({method: 'get', url: `${API}/watch?episodeId=${animeDetails.episodes[0].id}`, timeout: 10000}).then((response2) => {
+        // Set the url, adminPassword, episodes and current episode
+        lobbies.set(randomLobbyId, {
+            adminPassword: randomAdminId, 
+            animeStreamUrl: response2.data.sources[0].url, 
+            animeDetails: animeDetails, 
+            episode: animeDetails.episodes[0] 
+        })
 
-        }, req.query.closetime);
-    }
+        // Return Json
+        res.send({lobby: randomLobbyId, data: lobbies.get(randomLobbyId)})
 
 
-    if(req.query.starttime) {
-        setTimeout(() => {
-            var lobby = lobbies.get(randomLobbyId);
-            lobby.sockets.forEach((socket) => socket.emit('play'));
-            console.log("Começou o cinema!")
-        }, req.query.starttime);
-    }
+        // Close Time setted
+        if(req.query.closetime) {
+            setTimeout(() => {
+                var lobby = lobbies.get(randomLobbyId);
+                lobby.sockets.forEach((socket) => socket.emit('exit'));
+
+            }, req.query.closetime);
+        }
+
+        // Start Time setted
+        if(req.query.starttime) {
+            setTimeout(() => {
+                var lobby = lobbies.get(randomLobbyId);
+                lobby.sockets.forEach((socket) => socket.emit('play'));
+                console.log("Começou o cinema!")
+            }, req.query.starttime);
+        }
+        
+    }).catch((err) => {
+       console.log(err)
+    });
 })
 
 io.on('connection', (socket) => {
@@ -230,7 +275,7 @@ function generateId (len) {
 
 async function changeLobbyEpisode(id, episode) {
     var animeLobby = lobbies.get(id);
-    animeLobby.episode = animeLobby.episodes.find((ep) => ep.id == episode)
+    animeLobby.episode = animeLobbyAdmin.animeDetails.episodes.find((ep) => ep.id == episode)
 }
 
 server.listen(PORT, () => console.log(`Listen to ${PORT}`))
