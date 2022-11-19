@@ -13,7 +13,6 @@ function generateId (len) {
 function postAnimeId(id) {
   $('.loading')[0].classList.toggle('show')
   fetch('/search?selected=' + id, {method: 'GET', redirect: 'follow'}).then((response) => {
-    console.log(response)
     if (response.redirected) {
       window.location.href = response.url;
     }

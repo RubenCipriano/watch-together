@@ -31,10 +31,10 @@
                 <div class="row">
                 <% for(var i = 0; i < animes.length; i++) {%>
                     <div class="col-2">
-                        <div class="card anime-card" onclick="postAnimeId('<%= animes[i].animeId %>')">
-                            <img class="card-img-top" src="<%= animes[i].animeImg %>">
+                        <div class="card anime-card" onclick="postAnimeId('<%= animes[i].id %>')">
+                            <img class="card-img-top" src="<%= animes[i].image %>">
                             <div class="card-body">
-                                <h6 class="card-title"><%= animes[i].animeTitle %></h6>
+                                <h6 class="card-title"><%= animes[i].title %></h6>
                             </div>
                         </div>
                     </div>

@@ -21,13 +21,15 @@ $(document).ready(function() {
         })
     
         socket.on('play', () => {
-            console.log("OLA")
             video.play();
         })
 
         socket.on('change', (videoEp) => {
-            if(!videoEp.endsWith('mp4')) changeSource(videoEp)
-            else video.currentSrc = videoEp;
+            if(!videoEp.streamUrl.endsWith('mp4')) changeSource(videoEp.streamUrl)
+            else video.currentSrc = videoEp.streamUrl;
+            animeShowInfo = videoEp.episode;
+            getTimeStamps(video);
+            $('.loading')[0].classList.toggle('show')
         })
 
         socket.on('exit', () => {
@@ -35,10 +37,85 @@ $(document).ready(function() {
         })
 
         $('.anime-ep').click((anime) => {
+            $('.loading')[0].classList.toggle('show')
             socket.emit('change', {id: lobbyId, episodeId: anime.target.attributes.value.nodeValue})
         })
+
+        getTimeStamps(video);
     }
 })
+
+function getTimeStamps(video) {
+    console.log(`query TimeStampIdSearch {
+        searchEpisodes(search:"${animeShowInfo.title}", limit:1) {
+            timestamps {
+                at
+                type {
+                    id
+                    name
+                }
+            }
+        }
+    }`)
+
+    var data = JSON.stringify({
+        query: `query TimeStampIdSearch {
+            searchEpisodes(search:"${animeShowInfo.title}", limit:1, sort: "createdAt") {
+                timestamps {
+                    at
+                    type {
+                        id
+                        name
+                    }
+                }
+            }
+        }`
+    });
+    
+    var config = { 
+        method: 'post', 
+        url: 'https://api.anime-skip.com/graphql', 
+        headers: { 'X-Client-ID': 'ZGfO0sMF3eCwLYf8yMSCJjlynwNGRXWE', 'Content-Type': 'application/json' },
+        data : data
+    };
+    
+    axios(config).then(function (response) {
+        $('.loading')[0].classList.toggle('show')
+        if(response.data.data.searchEpisodes.length > 0) {
+            var timestamps = response.data.data.searchEpisodes[0].timestamps;
+            var introTimestamp = {};
+
+            introTimestamp.end = response.data.data.searchEpisodes[0].timestamps.find((timeStamp) => timeStamp.type.name == "Title Card").at
+
+            for(var i = 0; i < response.data.data.searchEpisodes[0].timestamps.length; i++) {
+                if(response.data.data.searchEpisodes[0].timestamps[i].at == introTimestamp.end) break
+                if(response.data.data.searchEpisodes[0].timestamps[i].at + 100 > introTimestamp.end) {
+                    introTimestamp.start = response.data.data.searchEpisodes[0].timestamps[i].at
+                    break;
+                }
+            }
+
+            $('.skip-button').click(() => video.currentTime = introTimestamp.end)
+
+            var interval = setInterval(() => {
+                if(introTimestamp.start - 2 < video.currentTime && introTimestamp.end > video.currentTime) {
+                    $('.skip-button')[0].classList.add('show')
+                } else {
+                    if(introTimestamp.end < video.currentTime) {
+                        $('.skip-button')[0].classList.remove('show')
+                    }
+                }
+            }, 2000)
+
+            if(introTimestamp.end < video.currentTime) {
+                clearInterval(interval);
+            }
+        }
+    })
+    .catch(function (error) {
+        console.log(error);
+    }).finally(() => $('.loading')[0].classList.toggle('show'))
+}
 
 function changeSource(source) {
     let vid = document.getElementById('video');

@@ -12,21 +12,10 @@ const server = http.createServer(app);
 const { Server } = require("socket.io");
 const io = new Server(server);
 
-
-const PORT = process.env.PORT || 8080
-const API = "https://gogoanime.consumet.org";
-var animes = null;
-
-var cors = require('cors');
-app.use(cors());
-
-app.use(function (req, res, next) {
-    res.setHeader('Access-Control-Allow-Origin', 'http://localhost:8080');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-    res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
-    res.setHeader('Access-Control-Allow-Credentials', true);
-    next();
-});
+// -------------------------------------------------------------------------
+const PORT = process.env.PORT || 80
+const API = "https://api.consumet.org/anime/enime";
+// -------------------------------------------------------------------------
 
 // set the view engine to ejs
 app.set('view engine', 'ejs');
@@ -38,6 +27,7 @@ app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 
 var lobbies = new Map();
+var animes = null;
 
 app.get('/', async (req, res) => {
     res.render('home/home')
@@ -48,15 +38,17 @@ app.get('/search', async (req, res) => {
         var animeSearched = await searchAnime(req.query.search);
         if(animeSearched.length == 1) {
             var adminPassword = generateId();
-            lobbies.set(req.cookies.id, {anime: animeSearched[0].animeId, adminPassword: adminPassword})
-            res.redirect(`/lobby/${req.cookies.id}/${adminPassword}`)
+            var lobbyId = generateId();
+            lobbies.set(lobbyId, {anime: animeSearched[0].id, adminPassword: adminPassword})
+            res.redirect(`/lobby/${lobbyId}/${adminPassword}`)
         } else {
             res.render('home/home', { animes: animeSearched })
         }
     } else {
         var adminPassword = generateId();
-        lobbies.set(req.cookies.id, {anime: req.query.selected, adminPassword: adminPassword})
-        res.redirect(`/lobby/${req.cookies.id}/${adminPassword}`)
+        var lobbyId = generateId();
+        lobbies.set(lobbyId, {anime: req.query.selected, adminPassword: adminPassword})
+        res.redirect(`/lobby/${lobbyId}/${adminPassword}`)
     }
 })
 
@@ -66,15 +58,16 @@ app.get('/lobby/:lobby/', (req, res) => res.redirect(`/lobby/${req.params.lobby}
 app.get('/lobby/:lobby/:admin', async (req, res) => {
     var animeLobbyAdmin = lobbies.get(req.params.lobby);
 
-    console.log(req.params.lobby)
-
     if(!animeLobbyAdmin) return res.redirect('/')
 
     if(animeLobbyAdmin.adminPassword != req.params.admin) {
         if(req.params.admin == 'spectate') {
-            axios({method: 'get', url: `${API}/vidcdn/watch/${animeLobbyAdmin.episode}`}).then((response2) => {
-                res.render('video/video', { animeEp: response2.data.sources[0].file })
-            })
+            axios({method: 'get', url: `${API}/watch?episodeId=${animeLobbyAdmin.episode.id}`}).then((response2) => {
+                res.render('video/video', { animeEp: response2.data.sources[0].file, animeShowInfo: animeLobbyAdmin.episode })
+            }).catch((err) => {
+                console.log(err)
+                res.redirect('/')
+            });
         } else {
             res.redirect(`/lobby/${req.params.lobby}/spectate`)
         }
@@ -85,15 +78,18 @@ app.get('/lobby/:lobby/:admin', async (req, res) => {
             var animeDetails = null;
             animeDetails = await getAnimeDetails(searchAnime);
             if(animeDetails) {
-                animeLobbyAdmin.episodes = animeDetails.episodesList
-                animeLobbyAdmin.episode = animeDetails.episodesList[0].episodeId
+                animeLobbyAdmin.episodes = animeDetails.episodes
+                animeLobbyAdmin.episode = animeDetails.episodes[0]
             }
         }
-    
-        var animeEpisode = animeLobbyAdmin.episode;
-        axios({method: 'get', url: `${API}/vidcdn/watch/${animeEpisode}`}).then((response2) => {
-            res.render('video/video', { animeEp: response2.data.sources[0].file, animeEps: animeLobbyAdmin.episodes })
-        })
+        var animeEpisode = animeLobbyAdmin.episode.id;
+
+        axios({method: 'get', url: `${API}/watch?episodeId=${animeEpisode}`}).then((response2) => {
+            res.render('video/video', { animeEp: response2.data.sources[0].url, animeEps: animeLobbyAdmin.episodes, animeShowInfo: animeLobbyAdmin.episode })
+        }).catch((err) => {
+            console.log(err)
+            res.redirect('/')
+        });
     }
 })
 
@@ -130,7 +126,7 @@ app.get('/random', async (req, res) => {
         setTimeout(() => {
             var lobby = lobbies.get(randomLobbyId);
             lobby.sockets.forEach((socket) => socket.emit('play'));
-            console.log("comeca fdp")
+            console.log("Começou o cinema!")
         }, req.query.starttime);
     }
 })
@@ -163,15 +159,18 @@ io.on('connection', (socket) => {
         }
     })
 
-    socket.on('change', (idChange) => {
+    socket.on('change', async (idChange) => {
         var animeLobby = lobbies.get(idChange.id);
-        changeLobbyEpisode(idChange.id, idChange.episodeId)
+        await changeLobbyEpisode(idChange.id, idChange.episodeId)
         if(animeLobby.sockets) {
             animeLobby.sockets.forEach((viewer) => {
                 viewer.emit('pause', 0);
-                axios({method: 'get', url: `${API}/vidcdn/watch/${idChange.episodeId}`}).then((response2) => {
-                    viewer.emit('change', response2.data.sources[0].file );
-                })
+                axios({method: 'get', url: `${API}/watch?episodeId=${idChange.episodeId}`}).then((response2) => {
+                    viewer.emit('change', {streamUrl: response2.data.sources[0].url, episode: animeLobby.episode });
+                }).catch((err) => {
+                    console.log(err)
+                    socket.emit('exit')
+                });
             })
         }
     })
@@ -184,13 +183,13 @@ function between(min, max) {
 }
 
 async function searchAnime(animeString) {
-    var response = await axios({ method: 'get', url: `${API}/search?keyw=${animeString}` })
-    return response.data;
+    var response = await axios({ method: 'get', url: `${API}/${animeString}` })
+    return response.data.results;
 }
 
 
 async function getAnimeDetails(animeId) {
-    var response = await axios({method: 'get', url: `${API}/anime-details/${animeId}`})
+    var response = await axios({method: 'get', url: `${API}/info?id=${animeId}`})
     return response.data;
 }
  
@@ -199,14 +198,9 @@ function generateId (len) {
     return crypto.randomBytes(20).toString('hex');
 }
 
-function changeLobbyEpisode(id, episode) {
+async function changeLobbyEpisode(id, episode) {
     var animeLobby = lobbies.get(id);
-
-    if(typeof animeLobby == 'string') {
-        animeLobby = episode;
-    } else {
-        animeLobby.anime = episode;
-    }
+    animeLobby.episode = animeLobby.episodes.find((ep) => ep.id == episode)
 }
 
 server.listen(PORT, () => console.log(`Listen to ${PORT}`))
