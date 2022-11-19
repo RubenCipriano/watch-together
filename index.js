@@ -77,7 +77,7 @@ app.get('/lobby/:lobby/:admin', async (req, res) => {
             axios({method: 'get', url: `${API}/watch?episodeId=${animeLobbyAdmin.episode.id}`, timeout: 10000}).then((response2) => {
                 res.render('video/video', { animeEp: response2.data.sources[0].url, animeShowInfo: animeLobbyAdmin.episode })
             }).catch((err) => {
-                console.log(err)
+                lobbies.delete(req.params.lobby)
                 res.redirect('/')
             });
         } else {
@@ -97,7 +97,7 @@ app.get('/lobby/:lobby/:admin', async (req, res) => {
         axios({method: 'get', url: `${API}/watch?episodeId=${animeLobbyAdmin.episode.id}`, timeout: 10000}).then((response2) => {
             res.render('video/video', { animeEp: response2.data.sources[0].url, animeEps: animeLobbyAdmin.episodes, animeShowInfo: animeLobbyAdmin.episode })
         }).catch((err) => {
-            console.log(err)
+            lobbies.delete(req.params.lobby)
             res.redirect('/')
         });
     }
@@ -183,6 +183,18 @@ io.on('connection', (socket) => {
                 });
             })
         }
+    })
+
+    socket.on('disconnect', () => {
+        lobbies.forEach((lobby, key) => {
+            if(lobby.sockets) {
+                lobby.sockets.splice(lobby.sockets.findIndex((s) => s == socket), 1);
+
+                if(lobby.sockets.length == 0) lobbies.delete(key);
+            } else {
+                lobbies.delete(key)
+            }
+        })
     })
 });
 
