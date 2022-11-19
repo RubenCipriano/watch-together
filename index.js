@@ -30,16 +30,28 @@ var lobbies = new Map();
 var animes = null;
 
 app.get('/', async (req, res) => {
-    res.render('home/home')
+    var lobbiesArray = []
+
+    lobbies.forEach((lobby, key) => {
+        var obj = {}
+        if(lobby.animeName) obj.title = lobby.animeName;
+        if(lobby.episode) obj.episode = lobby.episode.title;
+        if(lobby.sockets) obj.size = lobby.sockets.length;
+        if(lobby.episodes) obj.episodeCount = lobby.episodes.length;
+        obj.id = key;
+        
+        lobbiesArray.push(obj)
+    })
+    res.render('home/home', {lobbies: lobbiesArray})
 })
 
 app.get('/search', async (req, res) => {
-    if(req.query.search) {
+    if(!req.query.selected) {
         var animeSearched = await searchAnime(req.query.search);
         if(animeSearched.length == 1) {
             var adminPassword = generateId();
             var lobbyId = generateId();
-            lobbies.set(lobbyId, {anime: animeSearched[0].id, adminPassword: adminPassword})
+            lobbies.set(lobbyId, { animeName: req.query.search, animeId: animeSearched[0].id, adminPassword: adminPassword })
             res.redirect(`/lobby/${lobbyId}/${adminPassword}`)
         } else {
             res.render('home/home', { animes: animeSearched })
@@ -47,7 +59,7 @@ app.get('/search', async (req, res) => {
     } else {
         var adminPassword = generateId();
         var lobbyId = generateId();
-        lobbies.set(lobbyId, {anime: req.query.selected, adminPassword: adminPassword})
+        lobbies.set(lobbyId, {animeId: req.query.selected,animeName: req.query.search, adminPassword: adminPassword})
         res.redirect(`/lobby/${lobbyId}/${adminPassword}`)
     }
 })
@@ -62,8 +74,8 @@ app.get('/lobby/:lobby/:admin', async (req, res) => {
 
     if(animeLobbyAdmin.adminPassword != req.params.admin) {
         if(req.params.admin == 'spectate') {
-            axios({method: 'get', url: `${API}/watch?episodeId=${animeLobbyAdmin.episode.id}`}).then((response2) => {
-                res.render('video/video', { animeEp: response2.data.sources[0].file, animeShowInfo: animeLobbyAdmin.episode })
+            axios({method: 'get', url: `${API}/watch?episodeId=${animeLobbyAdmin.episode.id}`, timeout: 10000}).then((response2) => {
+                res.render('video/video', { animeEp: response2.data.sources[0].url, animeShowInfo: animeLobbyAdmin.episode })
             }).catch((err) => {
                 console.log(err)
                 res.redirect('/')
@@ -72,7 +84,7 @@ app.get('/lobby/:lobby/:admin', async (req, res) => {
             res.redirect(`/lobby/${req.params.lobby}/spectate`)
         }
     } else {
-        var searchAnime = animeLobbyAdmin.anime;
+        var searchAnime = animeLobbyAdmin.animeId;
 
         if(searchAnime && !animeLobbyAdmin.episode) {
             var animeDetails = null;
@@ -82,9 +94,7 @@ app.get('/lobby/:lobby/:admin', async (req, res) => {
                 animeLobbyAdmin.episode = animeDetails.episodes[0]
             }
         }
-        var animeEpisode = animeLobbyAdmin.episode.id;
-
-        axios({method: 'get', url: `${API}/watch?episodeId=${animeEpisode}`}).then((response2) => {
+        axios({method: 'get', url: `${API}/watch?episodeId=${animeLobbyAdmin.episode.id}`, timeout: 10000}).then((response2) => {
             res.render('video/video', { animeEp: response2.data.sources[0].url, animeEps: animeLobbyAdmin.episodes, animeShowInfo: animeLobbyAdmin.episode })
         }).catch((err) => {
             console.log(err)
@@ -165,7 +175,7 @@ io.on('connection', (socket) => {
         if(animeLobby.sockets) {
             animeLobby.sockets.forEach((viewer) => {
                 viewer.emit('pause', 0);
-                axios({method: 'get', url: `${API}/watch?episodeId=${idChange.episodeId}`}).then((response2) => {
+                axios({method: 'get', url: `${API}/watch?episodeId=${idChange.episodeId}`, timeout: 10000}).then((response2) => {
                     viewer.emit('change', {streamUrl: response2.data.sources[0].url, episode: animeLobby.episode });
                 }).catch((err) => {
                     console.log(err)
@@ -183,14 +193,25 @@ function between(min, max) {
 }
 
 async function searchAnime(animeString) {
-    var response = await axios({ method: 'get', url: `${API}/${animeString}` })
-    return response.data.results;
+    try {
+        var response = await axios({ method: 'get', url: `${API}/${animeString}`, timeout: 5000 })
+        return response.data.results;
+    }   
+    catch(err) {
+        console.log(err)
+        return null;
+    }
 }
 
 
 async function getAnimeDetails(animeId) {
-    var response = await axios({method: 'get', url: `${API}/info?id=${animeId}`})
-    return response.data;
+    try {
+        var response = await axios({method: 'get', url: `${API}/info?id=${animeId}`, timeout: 5000})
+        return response.data;
+    } catch(err) {
+        console.log(err)
+        return null;
+    }
 }
  
 // generateId :: Integer -> String

@@ -76,7 +76,7 @@ function getTimeStamps(video) {
         method: 'post', 
         url: 'https://api.anime-skip.com/graphql', 
         headers: { 'X-Client-ID': 'ZGfO0sMF3eCwLYf8yMSCJjlynwNGRXWE', 'Content-Type': 'application/json' },
-        data : data
+        data : data,
     };
     
     axios(config).then(function (response) {
@@ -89,7 +89,11 @@ function getTimeStamps(video) {
 
             for(var i = 0; i < response.data.data.searchEpisodes[0].timestamps.length; i++) {
                 if(response.data.data.searchEpisodes[0].timestamps[i].at == introTimestamp.end) break
-                if(response.data.data.searchEpisodes[0].timestamps[i].at + 100 > introTimestamp.end) {
+                if(response.data.data.searchEpisodes[0].timestamps[i].type.name == "Intro") {
+                    introTimestamp.start = response.data.data.searchEpisodes[0].timestamps[i].at
+                    break;
+                }
+                if(response.data.data.searchEpisodes[0].timestamps[i].type.name == "Recap") {
                     introTimestamp.start = response.data.data.searchEpisodes[0].timestamps[i].at
                     break;
                 }

@@ -10,11 +10,15 @@ function generateId (len) {
 }
 
 
-function postAnimeId(id) {
+function postAnimeId(id, title) {
   $('.loading')[0].classList.toggle('show')
-  fetch('/search?selected=' + id, {method: 'GET', redirect: 'follow'}).then((response) => {
+  fetch(`/search?selected=${id}&search=${title}`, {method: 'GET', redirect: 'follow'}).then((response) => {
     if (response.redirected) {
       window.location.href = response.url;
     }
   })
+}
+
+function gotoUrl(url) {
+  window.location.href = url;
 }

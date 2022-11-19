@@ -42,6 +42,7 @@ video {
     background: none;
     border: 1px solid #eee;
     width: 100%;
+    height: 100%;
 }
 
 .row {
@@ -55,7 +56,6 @@ video {
     margin: 0;
     min-height: 100%;
     height: 100vh;
-    margin-bottom: 100px;
 }
 
 .row-10 {
@@ -67,13 +67,8 @@ video {
     flex-direction: column;
 }
 
-.row {
-    margin-bottom: 20px;
-    margin-top: 20px;
-}
-
-.container > .row {
-    gap: 15px;
+.col-2 {
+    padding-bottom: 20px;
 }
 
 input {
@@ -206,6 +201,16 @@ a.active {
     align-items: center;
     text-decoration: none;
     transition: 0.5s;
+    background-color: rgba(0,0,0,0.3);
+    z-index: 9999;
+}
+
+#top > .container {
+    margin-top: 200px;
+}
+
+.row.main-show {
+    margin-bottom: 30px;
 }
 
 .goto-top:hover {
@@ -255,12 +260,14 @@ a.active {
     background-color: rgb(0, 0, 0, 0.4);
     transition: 1s;
     cursor: pointer;
+    display: none;
 }
 
 .skip-button.show {
     bottom: 15%;
     right: 30px;
     padding: 10px;
+    display: block;
 }
 
 .skip-button > * {
@@ -270,4 +277,18 @@ a.active {
 
 .skip-button:hover {
     background-color: rgba(255, 0, 0, 0.4);
+}
+
+@media only screen and (max-width: 992px) {
+    .chat-box {
+        min-height: 40vh;
+    }
+
+    .row-90 {
+        height: 80%;
+    }
+
+    .row-10 {
+        height: 20%;
+    }
 }
