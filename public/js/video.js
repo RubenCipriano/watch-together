@@ -1,8 +1,6 @@
 $(document).ready(function() {
     if(Hls.isSupported()) {
         var lobbyId = getCookie('id') || window.location.pathname.split('/')[2];
-
-        if(!video.currentSrc.endsWith('mp4')) changeSource(video.currentSrc)
     
         var socket = io();
         socket.emit('lobby-id', lobbyId);
@@ -28,8 +26,7 @@ $(document).ready(function() {
             if(!videoEp.streamUrl.endsWith('mp4')) changeSource(videoEp.streamUrl)
             else video.currentSrc = videoEp.streamUrl;
             animeShowInfo = videoEp.episode;
-            getTimeStamps(video);
-            $('.loading')[0].classList.toggle('show')
+            $('.loading')[0].classList.add('show')
         })
 
         socket.on('exit', () => {
@@ -37,11 +34,11 @@ $(document).ready(function() {
         })
 
         $('.anime-ep').click((anime) => {
-            $('.loading')[0].classList.toggle('show')
+            $('.loading')[0].classList.add('show')
             socket.emit('change', {id: lobbyId, episodeId: anime.target.attributes.value.nodeValue})
         })
 
-        getTimeStamps(video);
+        if(!video.currentSrc.endsWith('mp4')) changeSource(video.currentSrc)
     }
 })
 
@@ -80,7 +77,6 @@ function getTimeStamps(video) {
     };
     
     axios(config).then(function (response) {
-        $('.loading')[0].classList.toggle('show')
         if(response.data.data.searchEpisodes.length > 0) {
             var timestamps = response.data.data.searchEpisodes[0].timestamps;
             var introTimestamp = {};
@@ -118,7 +114,7 @@ function getTimeStamps(video) {
     })
     .catch(function (error) {
         console.log(error);
-    }).finally(() => $('.loading')[0].classList.toggle('show'))
+    })
 }
 
 function changeSource(source) {
@@ -127,7 +123,10 @@ function changeSource(source) {
     this.hls = new Hls();
     this.hls.loadSource(source);
     this.hls.attachMedia(vid);
-    this.hls.on(Hls.Events.MANIFEST_PARSED, () => { });
+    this.hls.on(Hls.Events.BUFFER_APPENDED, () => {
+        $('.loading')[0].classList.remove('show')
+        getTimeStamps(video)
+    })
 }
 
 function getCookie(cookieName) {

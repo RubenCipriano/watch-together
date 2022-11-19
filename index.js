@@ -84,11 +84,8 @@ app.get('/lobby/:lobby/:admin', async (req, res) => {
             res.redirect(`/lobby/${req.params.lobby}/spectate`)
         }
     } else {
-        var searchAnime = animeLobbyAdmin.animeId;
-
-        if(searchAnime && !animeLobbyAdmin.episode) {
-            var animeDetails = null;
-            animeDetails = await getAnimeDetails(searchAnime);
+        if(animeLobbyAdmin.animeId) {
+            var animeDetails = await getAnimeDetails(animeLobbyAdmin.animeId);
             if(animeDetails) {
                 animeLobbyAdmin.episodes = animeDetails.episodes
                 animeLobbyAdmin.episode = animeDetails.episodes[0]
