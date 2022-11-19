@@ -233,3 +233,5 @@ async function changeLobbyEpisode(id, episode) {
 }
 
 server.listen(PORT, () => console.log(`Listen to ${PORT}`))
+
+module.exports = server;
