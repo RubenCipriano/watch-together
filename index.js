@@ -117,7 +117,7 @@ app.get('/random', async (req, res) => {
     }
 
     var animeDetails = await getAnimeDetails(animeSearched[between(0, animeSearched.length)].animeId);
-    lobbies.set(randomLobbyId, {adminPassword: randomAdminId, episodes: animeDetails.episodesList, episode: animeDetails.episodesList[0].episodeId, sockets: []})
+    lobbies.set(randomLobbyId, {adminPassword: randomAdminId, animeEps: animeDetails.episodes, animeEp: animeDetails.episodesList[0].url, animeShowInfo: animeLobbyAdmin.episode, sockets: []})
     
     res.send({lobby: randomLobbyId, data: lobbies.get(randomLobbyId)})
 
