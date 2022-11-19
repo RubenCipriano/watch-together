@@ -187,12 +187,11 @@ io.on('connection', (socket) => {
 
     socket.on('disconnect', () => {
         lobbies.forEach((lobby, key) => {
-            if(lobby.sockets) {
-                lobby.sockets.splice(lobby.sockets.findIndex((s) => s == socket), 1);
-
+            if(!lobby.sockets) return lobbies.delete(key)
+            var foundedSocketIndex = lobby.sockets.findIndex((s) => s == socket)
+            if(foundedSocketIndex >= 0) {
+                lobby.sockets.splice(foundedSocketIndex, 1)
                 if(lobby.sockets.length == 0) lobbies.delete(key);
-            } else {
-                lobbies.delete(key)
             }
         })
     })
