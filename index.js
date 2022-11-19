@@ -13,7 +13,7 @@ const { Server } = require("socket.io");
 const io = new Server(server);
 
 // -------------------------------------------------------------------------
-const PORT = process.env.PORT || 10000
+const PORT = process.env.PORT || 8080
 const API = "https://api.consumet.org/anime/enime";
 // -------------------------------------------------------------------------
 
