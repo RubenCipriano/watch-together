@@ -112,6 +112,8 @@ app.get('/lobby/:lobby/:admin', async (req, res) => {
             else res.redirect('/')
         }
 
+        if(!animeLobbyAdmin.episode) res.redirect('/')
+
         // If First time entering get stream URL, else just get it from the admin
         if(!animeLobbyAdmin.animeStreamUrl) {
             axios({method: 'get', url: `${API}/watch?episodeId=${animeLobbyAdmin.episode.id}`, timeout: 10000}).then((response2) => {
@@ -242,11 +244,6 @@ io.on('connection', (socket) => {
         var animeLobby = lobbies.get(idChange.id);
 
         if(animeLobby) {
-            if(animeLobby.sockets) {
-                animeLobby.sockets.forEach((viewer) => {
-                    viewer.emit('pause', 0);
-                })
-            }
 
             await changeLobbyEpisode(idChange.id, idChange.episodeId)
             axios({method: 'get', url: `${API}/watch?episodeId=${idChange.episodeId}`, timeout: 10000}).then((response2) => {

@@ -40,8 +40,6 @@ function getTimeStamps(video) {
 
             $('.skip-button').click(() => video.currentTime = introTimestamp.end)
 
-            console.log(introTimestamp)
-            
             var interval = setInterval(() => {
                 if(introTimestamp.start - 2 < video.currentTime && introTimestamp.end > video.currentTime) {
                     $('.skip-button')[0].classList.add('show')
@@ -62,7 +60,7 @@ function getTimeStamps(video) {
     })
 }
 
-function changeSource(source) {
+function changeSource(source, socket) {
     let vid = document.getElementById('video');
     if (this.hls) { this.hls.destroy(); }
     this.hls = new Hls();
@@ -72,6 +70,7 @@ function changeSource(source) {
         $('.loading')[0].classList.remove('show')
     })
     getTimeStamps(video)
+    socket.changing = false;
 }
 
 function getCookie(cookieName) {

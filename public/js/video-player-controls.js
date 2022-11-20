@@ -18,7 +18,7 @@ $(document).ready(function() {
     socket.on('pause', (timeStamp) => {
         if(playButtonControls) playButtonControls.innerHTML = '<i class="fa-solid fa-play"></i>'
         if(playButtonVideoPlayer) playButtonVideoPlayer.innerHTML = '<i class="fa-solid fa-pause"></i>'
-        changePlay(false)
+        if(!socket.changing) changePlay(false)
         videoPlayer.pause();
         videoPlayer.currentTime = timeStamp;
     })
@@ -31,8 +31,9 @@ $(document).ready(function() {
     })
 
     socket.on('change', (videoEp) => {
+        videoPlayer.pause();
         $('.loading')[0].classList.add('show')
-        if(!videoEp.animeStreamUrl.endsWith('mp4')) changeSource(videoEp.animeStreamUrl, socket, lobbyId)
+        if(!videoEp.animeStreamUrl.endsWith('mp4')) changeSource(videoEp.animeStreamUrl, socket)
         else videoPlayer.currentSrc = videoEp.animeStreamUrl;
         animeShowInfo = videoEp.episode;
     })
@@ -42,12 +43,13 @@ $(document).ready(function() {
     })
 
     $('.anime-ep').click((anime) => {
+        socket.changing = true;
         $('.loading')[0].classList.add('show')
         socket.emit('change', {id: lobbyId, episodeId: anime.target.attributes.value.nodeValue})
     })
 
     if(!videoPlayer.currentSrc.endsWith('mp4')) {
-        changeSource(videoPlayer.currentSrc, socket, lobbyId)
+        changeSource(videoPlayer.currentSrc, socket)
         videoPlayer.currentTime = animeShowInfo.currentTime || 0;
         if(animeShowInfo.paused == false) videoPlayer.play();
     }
