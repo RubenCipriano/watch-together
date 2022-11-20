@@ -280,7 +280,7 @@ io.on('connection', (socket) => {
                         lobbies.delete(key);
                 }
                 else {
-                    if(lobby.sockets.length == 0 && lobby.startTime < 5)
+                    if(lobby.sockets.length == 0 && dateDiff(lobby.startTime) < 5)
                         lobbies.delete(key);
                 }
             }
