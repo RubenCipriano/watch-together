@@ -23,10 +23,10 @@ $(document).ready(function() {
         })
 
         socket.on('change', (videoEp) => {
+            $('.loading')[0].classList.add('show')
             if(!videoEp.animeStreamUrl.endsWith('mp4')) changeSource(videoEp.animeStreamUrl)
             else video.currentSrc = videoEp.animeStreamUrl;
             animeShowInfo = videoEp.episode;
-            $('.loading')[0].classList.add('show')
         })
 
         socket.on('exit', () => {
