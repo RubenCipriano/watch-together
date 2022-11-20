@@ -1,11 +1,13 @@
 var videoPlayer = $('video')[0];
 var playButtonVideoPlayer = $('.player-button-mobile')[0];
-var playButtonControls = $('.player-button-desktop')[0];
+var playButtonControls = $('.play-button')[0];
 var playerVolume = $('.player-volume')[0]
 var defaultVolume = localStorage.getItem('volume');
+var playerControls = $('.player-controls')[0];
+var fullscreenButton = $('.fullscreen')[0];
+
 var socket = io();
 var lobbyId = window.location.pathname.split('/')[2];
-var lobbyAdminId = window.location.pathname.split('/')[3];
 
 $(document).ready(function() {
     socket.emit('lobby-id', lobbyId);
@@ -16,6 +18,7 @@ $(document).ready(function() {
     socket.on('pause', (timeStamp) => {
         if(playButtonControls) playButtonControls.innerHTML = '<i class="fa-solid fa-play"></i>'
         if(playButtonVideoPlayer) playButtonVideoPlayer.innerHTML = '<i class="fa-solid fa-pause"></i>'
+        changePlay(false)
         videoPlayer.pause();
         videoPlayer.currentTime = timeStamp;
     })
@@ -23,6 +26,7 @@ $(document).ready(function() {
     socket.on('play', () => {
         if(playButtonControls) playButtonControls.innerHTML = '<i class="fa-solid fa-pause"></i>'
         if(playButtonVideoPlayer) playButtonVideoPlayer.innerHTML = '<i class="fa-solid fa-play"></i>'
+        changePlay(false)
         videoPlayer.play();
     })
 
@@ -61,25 +65,100 @@ function clickButton(button) {
 }
 
 function changePlay(sendSocket) {
-    playButtonVideoPlayer.classList.remove('hidden');
+    if(playButtonVideoPlayer) {
+        playButtonVideoPlayer.classList.remove('hidden');
 
-    if(playButtonControls.innerHTML.trim() == '<i class="fa-solid fa-play"></i>') {
-        playButtonControls.innerHTML = '<i class="fa-solid fa-pause"></i>'
-        playButtonVideoPlayer.innerHTML = '<i class="fa-solid fa-play"></i>'
-        videoPlayer.play();
-        if(sendSocket) socket.emit('play', lobbyId)
-    } else {
-        playButtonControls.innerHTML = '<i class="fa-solid fa-play"></i>'
-        playButtonVideoPlayer.innerHTML = '<i class="fa-solid fa-pause"></i>'
-        videoPlayer.pause();
-        if(sendSocket) socket.emit('pause', {id: lobbyId, timestamp: videoPlayer.currentTime})
+        if(playButtonControls) {
+            if(playButtonControls.innerHTML.trim() == '<i class="fa-solid fa-play"></i>') {
+                playButtonControls.innerHTML = '<i class="fa-solid fa-pause"></i>'
+                playButtonVideoPlayer.innerHTML = '<i class="fa-solid fa-play"></i>'
+                videoPlayer.play();
+                if(sendSocket) socket.emit('play', lobbyId)
+            } else {
+                playButtonControls.innerHTML = '<i class="fa-solid fa-play"></i>'
+                playButtonVideoPlayer.innerHTML = '<i class="fa-solid fa-pause"></i>'
+                videoPlayer.pause();
+                if(sendSocket) socket.emit('pause', {id: lobbyId, timestamp: videoPlayer.currentTime})
+            }
+        }
+
+        hideCursorTimeout = setTimeout(() => {
+            videoFrame.style.cursor = 'none';
+            playerControls.style.opacity = 0;
+        }, 2000)
+
+        setTimeout(() => {
+            playButtonVideoPlayer.classList.add('hidden');
+        }, 500)
     }
-
-    setTimeout(() => {
-        playButtonVideoPlayer.classList.add('hidden');
-    }, 500)
 }
 
 videoPlayer.addEventListener('timeupdate', () => {
     socket.emit('currentTime', {id: lobbyId, currentTime: videoPlayer.currentTime })
 })
+
+let videoFrame = $('.vidFrame')[0];
+let hideCursorTimeout = null;
+
+fullscreenButton.addEventListener('click', () => {
+    if(fullscreenButton.classList.contains('fullscreen')) {
+        if (videoFrame.requestFullScreen) {
+            videoFrame.requestFullScreen();
+        } else if (videoFrame.webkitRequestFullScreen) {
+            videoFrame.webkitRequestFullScreen();
+        } else if (videoFrame.mozRequestFullScreen) {
+            videoFrame.mozRequestFullScreen();
+        } else if(videoFrame.msRequestFullscreen) {
+            videoFrame.msRequestFullscreen();
+        }
+
+        var hideCursorTimeout = setTimeout(() => {
+            playerControls.style.opacity = 0;
+            videoFrame.style.cursor = 'none';
+        }, 5000)
+    } else {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+        } else if (document.mozCancelFullScreen) {
+            document.mozCancelFullScreen();
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        }
+    }
+})
+
+videoFrame.addEventListener('mousemove', () => {
+    if(hideCursorTimeout) clearInterval(hideCursorTimeout)
+    videoFrame.style.cursor = 'default'
+    playerControls.style.opacity = 1;
+    
+    if(!videoPlayer.paused) {
+        hideCursorTimeout = setTimeout(() => {
+            videoFrame.style.cursor = 'none';
+            playerControls.style.opacity = 0;
+        }, 5000)
+    }
+})
+
+document.addEventListener('webkitfullscreenchange', function(e) {
+	let isFullscreen = fullscreenButton.classList.contains('fullscreen');
+    fullscreenButton.classList.toggle('fullscreen');
+    if(isFullscreen) fullscreenButton.innerHTML = '<i class="fa-solid fa-compress"></i>'
+    else fullscreenButton.innerHTML = '<i class="fa-solid fa-expand"></i>'
+});
+
+document.addEventListener('mozfullscreenchange', function(e) {
+	let isFullscreen = fullscreenButton.classList.contains('fullscreen');
+    fullscreenButton.classList.toggle('fullscreen');
+    if(isFullscreen) fullscreenButton.innerHTML = '<i class="fa-solid fa-compress"></i>'
+    else fullscreenButton.innerHTML = '<i class="fa-solid fa-expand"></i>'
+});
+
+document.addEventListener('fullscreenchange', function(e) {
+	let isFullscreen = fullscreenButton.classList.contains('fullscreen');
+    fullscreenButton.classList.toggle('fullscreen');
+    if(isFullscreen) fullscreenButton.innerHTML = '<i class="fa-solid fa-compress"></i>'
+    else fullscreenButton.innerHTML = '<i class="fa-solid fa-expand"></i>'
+});

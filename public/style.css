@@ -148,7 +148,7 @@ a.active {
 }
 
 .loading.show {
-    z-index: 9999;
+    z-index: 2147483648;
     opacity: 1;
     overflow: hidden;
 }
@@ -257,7 +257,7 @@ a.active {
 
 .skip-button {
     position: absolute;
-    bottom: 15%;
+    bottom: 10%;
     right: -100px;
     padding: 10px;
     border-radius: 10px;
@@ -268,7 +268,6 @@ a.active {
 }
 
 .skip-button.show {
-    bottom: 15%;
     right: 30px;
     padding: 10px;
     display: block;
@@ -291,10 +290,27 @@ a.active {
     display: flex;
     height: 60px;
     align-items: center;
+    justify-content: space-between;
 }
 
-.player-controls > * {
-    margin-left: 20px;
+.player-controls:fullscreen, .player-controls::-moz-full-screen, .player-controls:-webkit-full-screen, .player-controls:-ms-fullscreen {
+    position: fixed;
+}
+
+video::-webkit-media-controls-enclosure {
+    display: none !important;
+}
+
+.player-controls {
+    z-index: 2;
+}
+
+.player-controls > .main-controls > * {
+    margin-left: 10px;
+}
+
+.player-controls > .fullscreen {
+    margin-right: 10px;
 }
 
 .player-button-desktop {
@@ -340,4 +356,9 @@ a.active {
     .row-10 {
         height: 20%;
     }
+}
+
+figure {
+    margin: 0 !important;
+    display: flex;
 }
