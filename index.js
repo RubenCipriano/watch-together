@@ -116,13 +116,13 @@ app.get('/lobby/:lobby/:admin', async (req, res) => {
         if(!animeLobbyAdmin.animeStreamUrl) {
             axios({method: 'get', url: `${API}/watch?episodeId=${animeLobbyAdmin.episode.id}`, timeout: 10000}).then((response2) => {
                 animeLobbyAdmin.animeStreamUrl = getMaxQuality(response2.data.sources).url
-                res.render('video/video', { animeStreamUrl: animeLobbyAdmin.animeStreamUrl, animeEpisodes: animeLobbyAdmin.animeDetails.episodes, animeShowInfo: animeLobbyAdmin.episode })
+                res.render('video/video', { animeStreamUrl: animeLobbyAdmin.animeStreamUrl, animeEpisodes: animeLobbyAdmin.animeDetails.episodes, animeShowInfo: animeLobbyAdmin.episode, isAdmin: true })
             }).catch((err) => {
                 lobbies.delete(req.params.lobby)
                 res.redirect('/')
             });
         } else {
-            res.render('video/video', { animeStreamUrl: animeLobbyAdmin.animeStreamUrl, animeEpisodes: animeLobbyAdmin.animeDetails.episodes, animeShowInfo: animeLobbyAdmin.episode })
+            res.render('video/video', { animeStreamUrl: animeLobbyAdmin.animeStreamUrl, animeEpisodes: animeLobbyAdmin.animeDetails.episodes, animeShowInfo: animeLobbyAdmin.episode, isAdmin: true })
         }
     }
 })
@@ -217,6 +217,7 @@ io.on('connection', (socket) => {
         var animeLobby = lobbies.get(idTimestamp.id);
 
         if(animeLobby) {
+            if(animeLobby.episode) animeLobby.episode.paused = true;
             if(animeLobby.sockets) {
                 animeLobby.sockets.forEach((viewer) => {
                     if(viewer != socket) viewer.emit('pause', idTimestamp.timestamp);
@@ -228,6 +229,7 @@ io.on('connection', (socket) => {
     socket.on('play', (id) => {
         var animeLobby = lobbies.get(id);
         if(animeLobby) {
+            if(animeLobby.episode) animeLobby.episode.paused = false;
             if(animeLobby.sockets) {
                 animeLobby.sockets.forEach((viewer) => {
                     if(viewer != socket) viewer.emit('play', id);
@@ -258,6 +260,15 @@ io.on('connection', (socket) => {
                 console.log(err)
                 socket.emit('exit')
             });
+        }
+    })
+
+    socket.on('currentTime', (currentTime) => {
+        var animeLobby = lobbies.get(currentTime.id);
+        if(animeLobby) {
+            if(animeLobby.episode) {
+                animeLobby.episode.currentTime = currentTime.currentTime;
+            }
         }
     })
 

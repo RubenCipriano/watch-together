@@ -1,47 +1,3 @@
-$(document).ready(function() {
-    if(Hls.isSupported()) {
-        var lobbyId = getCookie('id') || window.location.pathname.split('/')[2];
-    
-        var socket = io();
-        socket.emit('lobby-id', lobbyId);
-    
-        $(video).on('pause', () => {
-            socket.emit('pause', {id: lobbyId, timestamp: video.currentTime})
-        })
-    
-        $(video).on('play', () => {
-            socket.emit('play', lobbyId)
-        })
-    
-        socket.on('pause', (timeStamp) => {
-            video.pause();
-            video.currentTime = timeStamp;
-        })
-    
-        socket.on('play', () => {
-            video.play();
-        })
-
-        socket.on('change', (videoEp) => {
-            $('.loading')[0].classList.add('show')
-            if(!videoEp.animeStreamUrl.endsWith('mp4')) changeSource(videoEp.animeStreamUrl)
-            else video.currentSrc = videoEp.animeStreamUrl;
-            animeShowInfo = videoEp.episode;
-        })
-
-        socket.on('exit', () => {
-            location.pathname = ""
-        })
-
-        $('.anime-ep').click((anime) => {
-            $('.loading')[0].classList.add('show')
-            socket.emit('change', {id: lobbyId, episodeId: anime.target.attributes.value.nodeValue})
-        })
-
-        if(!video.currentSrc.endsWith('mp4')) changeSource(video.currentSrc)
-    }
-})
-
 function getTimeStamps(video) {
     var data = JSON.stringify({
         query: `query TimeStampIdSearch {
@@ -66,7 +22,6 @@ function getTimeStamps(video) {
     
     axios(config).then(function (response) {
         if(response.data.data.searchEpisodes.length > 0) {
-            var timestamps = response.data.data.searchEpisodes[0].timestamps;
             var introTimestamp = {};
 
             introTimestamp.end = response.data.data.searchEpisodes[0].timestamps.find((timeStamp) => timeStamp.type.name == "Title Card").at
@@ -126,4 +81,4 @@ function getCookie(cookieName) {
       cookie[key.trim()] = value;
     })
     return cookie[cookieName];
-  }
+}
