@@ -219,7 +219,7 @@ io.on('connection', (socket) => {
         if(animeLobby) {
             if(animeLobby.sockets) {
                 animeLobby.sockets.forEach((viewer) => {
-                    viewer.emit('pause', idTimestamp.timestamp);
+                    if(viewer != socket) viewer.emit('pause', idTimestamp.timestamp);
                 })
             }
         }
@@ -230,7 +230,7 @@ io.on('connection', (socket) => {
         if(animeLobby) {
             if(animeLobby.sockets) {
                 animeLobby.sockets.forEach((viewer) => {
-                    viewer.emit('play', id);
+                    if(viewer != socket) viewer.emit('play', id);
                 })
             }
         }
@@ -319,7 +319,6 @@ function getMaxQuality(sources) {
         if(source.quality == '720p') chooseSource = source;
         if(source.quality == '1080p') chooseSource = source;
     })
-    console.log(chooseSource)
     return chooseSource;
 }
 
