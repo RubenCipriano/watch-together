@@ -159,14 +159,15 @@ app.get('/random', async (req, res) => {
             episode: animeDetails.episodes[0] 
         })
 
-        // Return Json
-        res.send({lobby: randomLobbyId, data: lobbies.get(randomLobbyId)})
-
 
         // Close Time setted
         if(req.query.closetime) {
+
+            var lobby = lobbies.get(randomLobbyId);
+            var newDate = new Date();
+            lobby.closetime = newDate.setTime(newDate.getTime() + (req.query.starttime * 1000));
+
             setTimeout(() => {
-                var lobby = lobbies.get(randomLobbyId);
                 if(lobby.sockets) lobby.sockets.forEach((socket) => socket.emit('exit'));
                 else lobbies.delete(randomLobbyId)
 
@@ -186,6 +187,9 @@ app.get('/random', async (req, res) => {
             }, dateDiff(lobby.startTime));
         }
         
+        // Return Json
+        res.send({lobby: randomLobbyId, data: lobbies.get(randomLobbyId)})
+
     }).catch((err) => {
        console.log(err)
        res.send(null);
