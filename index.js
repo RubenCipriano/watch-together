@@ -275,7 +275,14 @@ io.on('connection', (socket) => {
             var foundedSocketIndex = lobby.sockets.findIndex((s) => s == socket)
             if(foundedSocketIndex >= 0) {
                 lobby.sockets.splice(foundedSocketIndex, 1)
-                if(lobby.sockets.length == 0 && !lobby.startTime) lobbies.delete(key);
+                if(!lobby.startTime) {
+                    if(lobby.sockets.length == 0)  
+                        lobbies.delete(key);
+                }
+                else {
+                    if(lobby.sockets.length == 0 && lobby.startTime < 5)
+                        lobbies.delete(key);
+                }
             }
         })
     })
