@@ -113,13 +113,14 @@ app.get('/lobby/:lobby/:admin', async (req, res) => {
         if(!animeLobbyAdmin.animeStreamUrl) {
             axios({method: 'get', url: `${API}/watch?episodeId=${animeLobbyAdmin.episode.id}`, timeout: 10000}).then((response2) => {
                 animeLobbyAdmin.animeStreamUrl = response2.data.sources[0].url
-                res.render('video/video', { animeStreamUrl: animeLobbyAdmin.animeStreamUrl, animeEps: animeLobbyAdmin.animeDetails.episodes, animeShowInfo: animeLobbyAdmin.episode })
+                console.log(animeLobbyAdmin.animeDetails.episodes)
+                res.render('video/video', { animeStreamUrl: animeLobbyAdmin.animeStreamUrl, animeEpisodes: animeLobbyAdmin.animeDetails.episodes, animeShowInfo: animeLobbyAdmin.episode })
             }).catch((err) => {
                 lobbies.delete(req.params.lobby)
                 res.redirect('/')
             });
         } else {
-            res.render('video/video', { animeStreamUrl: animeLobbyAdmin.animeStreamUrl, animeEps: animeLobbyAdmin.animeDetails.episodes, animeShowInfo: animeLobbyAdmin.episode })
+            res.render('video/video', { animeStreamUrl: animeLobbyAdmin.animeStreamUrl, animeEpisodes: animeLobbyAdmin.animeDetails.episodes, animeShowInfo: animeLobbyAdmin.episode })
         }
     }
 })
