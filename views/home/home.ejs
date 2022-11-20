@@ -36,9 +36,13 @@
                                     <h4 class="card-title"><%= lobbies[i].title %></h4>
                                     <p class="card-description"><%= lobbies[i].episode %></p>
                                     <p class="card-description">
-                                        <b><%= lobbies[i].size %></b> Person(s) Watching
+                                        <b><%= lobbies[i].size || 0 %></b> Person(s) Watching
                                     </p>
                                     <p class="card-description"><b><%= lobbies[i].episodeCount %></b> Episodes!</p>
+
+                                    <% if(lobbies[i].startTime) { %>
+                                        <p class="card-description">Countdown: <b class="start-date" value="<%= lobbies[i].startTime %>">00:00:00</b></p>
+                                    <% } %>
                                 </div>
                             </div>
                         </div>
@@ -72,5 +76,8 @@
 
         <script src="https://code.jquery.com/jquery-3.6.1.min.js" integrity="sha256-o88AwQnZB+VDvE9tvIXrMQaPlFFSUTR+nldQm1LuPXQ=" crossorigin="anonymous"></script>
         <script src="js/cookie.maker.js"></script>
+        <script>
+
+        </script>
     </body>
 </html>

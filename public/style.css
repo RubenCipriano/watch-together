@@ -124,6 +124,7 @@ a.active {
 .anime-card {
     transition: 0.5s;
     cursor: pointer;
+    height: 100%;
 }
 
 .anime-card:hover {

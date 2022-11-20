@@ -39,6 +39,8 @@ app.get('/', async (req, res) => {
         if(lobby.sockets) obj.size = lobby.sockets.length;
         if(lobby.animeDetails.title) obj.title = lobby.animeDetails.title;
         if(lobby.animeDetails.episodes) obj.episodeCount = lobby.animeDetails.episodes.length;
+        if(lobby.startTime) obj.startTime = lobby.startTime;
+
         obj.id = key;
         
         lobbiesArray.push(obj)
@@ -165,24 +167,35 @@ app.get('/random', async (req, res) => {
         if(req.query.closetime) {
             setTimeout(() => {
                 var lobby = lobbies.get(randomLobbyId);
-                lobby.sockets.forEach((socket) => socket.emit('exit'));
+                if(lobby.sockets) lobby.sockets.forEach((socket) => socket.emit('exit'));
+                else lobbies.delete(randomLobbyId)
 
             }, req.query.closetime);
         }
 
         // Start Time setted
         if(req.query.starttime) {
+            var lobby = lobbies.get(randomLobbyId);
+            var newDate = new Date();
+            lobby.startTime = newDate.setTime(newDate.getTime() + (req.query.starttime * 1000));
+
             setTimeout(() => {
-                var lobby = lobbies.get(randomLobbyId);
-                lobby.sockets.forEach((socket) => socket.emit('play'));
+                if(lobby.sockets) lobby.sockets.forEach((socket) => socket.emit('play'));
+                else lobbies.delete(randomLobbyId)
                 console.log("Começou o cinema!")
-            }, req.query.starttime);
+            }, dateDiff(lobby.startTime));
         }
         
     }).catch((err) => {
        console.log(err)
+       res.send(null);
     });
 })
+
+
+function dateDiff(dateString) {
+    return new Date(dateString).getTime() - new Date().getTime()
+}
 
 io.on('connection', (socket) => {
     socket.on('lobby-id', (id) => {
@@ -279,5 +292,3 @@ async function changeLobbyEpisode(id, episode) {
 }
 
 server.listen(PORT, () => console.log(`Listen to ${PORT}`))
-
-module.exports = server;

@@ -125,8 +125,8 @@ function changeSource(source) {
     this.hls.attachMedia(vid);
     this.hls.on(Hls.Events.BUFFER_APPENDED, () => {
         $('.loading')[0].classList.remove('show')
-        getTimeStamps(video)
     })
+    getTimeStamps(video)
 }
 
 function getCookie(cookieName) {
