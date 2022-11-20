@@ -4,6 +4,7 @@
         <link rel="stylesheet" href="css/bootstrap.min.css">
         <link rel="stylesheet" href="style.css">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css" integrity="sha512-MV7K8+y+gLIBoVD59lQIYicR65iaqukzvf/nwasF0nqhPay5w/9lJmVM2hMDcnK1OnMGCdVK+iQrJ7lzPJQd1w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
     </head>
     <body id="top">
         <div class="loading">
@@ -30,7 +31,7 @@
                 <div class="container">
                     <div class="row">
                     <% for(var i = 0; i < lobbies.length; i++) {%>
-                        <div class="col-2">
+                        <div class="col-md-3 col-sm-4 col-xs-6">
                             <div class="card anime-card" onclick="gotoUrl('/lobby/<%= lobbies[i].id %>/spectate')">
                                 <div class="card-body">
                                     <h4 class="card-title"><%= lobbies[i].title %></h4>
@@ -55,7 +56,7 @@
         <div class="container">
             <div class="row">
             <% for(var i = 0; i < animes.length; i++) {%>
-                <div class="col-2">
+                <div class="col-md-3 col-sm-4 col-xs-6">
                     <div class="card anime-card" onclick="postAnimeId('<%= animes[i].id %>', '<%= animes[i].title %>')">
                         <img class="card-img-top" src="<%= animes[i].image %>">
                         <div class="card-body">

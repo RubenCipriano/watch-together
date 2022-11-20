@@ -37,8 +37,10 @@ app.get('/', async (req, res) => {
         var obj = {}
         if(lobby.episode) obj.episode = lobby.episode.title;
         if(lobby.sockets) obj.size = lobby.sockets.length;
-        if(lobby.animeDetails.title) obj.title = lobby.animeDetails.title;
-        if(lobby.animeDetails.episodes) obj.episodeCount = lobby.animeDetails.episodes.length;
+        if(lobby.animeDetails && lobby.animeDetails != {}) {
+            obj.title = lobby.animeDetails.title; 
+            obj.episodeCount = lobby.animeDetails.episodes.length;
+        }
         if(lobby.startTime) obj.startTime = lobby.startTime;
 
         obj.id = key;
@@ -105,14 +107,15 @@ app.get('/lobby/:lobby/:admin', async (req, res) => {
 
         // Check if anime details in anime lobby
         if(!animeLobbyAdmin.animeDetails) {
-            animeLobbyAdmin.animeDetails = await getAnimeDetails(animeLobbyAdmin.animeSearchId) || {};
-            if(animeLobbyAdmin.animeDetails && animeLobbyAdmin.animeDetails != {}) animeLobbyAdmin.episode = animeLobbyAdmin.animeDetails.episodes[0]
+            animeLobbyAdmin.animeDetails = await getAnimeDetails(animeLobbyAdmin.animeSearchId);
+            if(animeLobbyAdmin.animeDetails) animeLobbyAdmin.episode = animeLobbyAdmin.animeDetails.episodes[0]
+            else res.redirect('/')
         }
 
         // If First time entering get stream URL, else just get it from the admin
         if(!animeLobbyAdmin.animeStreamUrl) {
             axios({method: 'get', url: `${API}/watch?episodeId=${animeLobbyAdmin.episode.id}`, timeout: 10000}).then((response2) => {
-                animeLobbyAdmin.animeStreamUrl = response2.data.sources[0].url
+                animeLobbyAdmin.animeStreamUrl = getMaxQuality(response2.data.sources).url
                 res.render('video/video', { animeStreamUrl: animeLobbyAdmin.animeStreamUrl, animeEpisodes: animeLobbyAdmin.animeDetails.episodes, animeShowInfo: animeLobbyAdmin.episode })
             }).catch((err) => {
                 lobbies.delete(req.params.lobby)
@@ -154,7 +157,7 @@ app.get('/random', async (req, res) => {
         // Set the url, adminPassword, episodes and current episode
         lobbies.set(randomLobbyId, {
             adminPassword: randomAdminId, 
-            animeStreamUrl: response2.data.sources[0].url, 
+            animeStreamUrl: getMaxQuality(response2.data.sources).url, 
             animeDetails: animeDetails, 
             episode: animeDetails.episodes[0] 
         })
@@ -213,35 +216,48 @@ io.on('connection', (socket) => {
     socket.on('pause', (idTimestamp) => {
         var animeLobby = lobbies.get(idTimestamp.id);
 
-        if(animeLobby.sockets) {
-            animeLobby.sockets.forEach((viewer) => {
-                viewer.emit('pause', idTimestamp.timestamp);
-            })
+        if(animeLobby) {
+            if(animeLobby.sockets) {
+                animeLobby.sockets.forEach((viewer) => {
+                    viewer.emit('pause', idTimestamp.timestamp);
+                })
+            }
         }
     })
 
     socket.on('play', (id) => {
         var animeLobby = lobbies.get(id);
-        if(animeLobby.sockets) {
-            animeLobby.sockets.forEach((viewer) => {
-                viewer.emit('play', id);
-            })
+        if(animeLobby) {
+            if(animeLobby.sockets) {
+                animeLobby.sockets.forEach((viewer) => {
+                    viewer.emit('play', id);
+                })
+            }
         }
     })
 
     socket.on('change', async (idChange) => {
         var animeLobby = lobbies.get(idChange.id);
-        await changeLobbyEpisode(idChange.id, idChange.episodeId)
-        if(animeLobby.sockets) {
-            animeLobby.sockets.forEach((viewer) => {
-                viewer.emit('pause', 0);
-                axios({method: 'get', url: `${API}/watch?episodeId=${idChange.episodeId}`, timeout: 10000}).then((response2) => {
-                    viewer.emit('change', {streamUrl: response2.data.sources[0].url, episode: animeLobby.episode });
-                }).catch((err) => {
-                    console.log(err)
-                    socket.emit('exit')
-                });
-            })
+
+        if(animeLobby) {
+            if(animeLobby.sockets) {
+                animeLobby.sockets.forEach((viewer) => {
+                    viewer.emit('pause', 0);
+                })
+            }
+
+            await changeLobbyEpisode(idChange.id, idChange.episodeId)
+            axios({method: 'get', url: `${API}/watch?episodeId=${idChange.episodeId}`, timeout: 10000}).then((response2) => {
+                animeLobby.animeStreamUrl = getMaxQuality(response2.data.sources).url
+                if(animeLobby.sockets) {
+                    animeLobby.sockets.forEach((viewer) => {
+                        viewer.emit('change', {animeStreamUrl: animeLobby.animeStreamUrl, episode: animeLobby.episode });
+                    })
+                }
+            }).catch((err) => {
+                console.log(err)
+                socket.emit('exit')
+            });
         }
     })
 
@@ -292,7 +308,19 @@ function generateId (len) {
 
 async function changeLobbyEpisode(id, episode) {
     var animeLobby = lobbies.get(id);
-    animeLobby.episode = animeLobbyAdmin.animeDetails.episodes.find((ep) => ep.id == episode)
+    animeLobby.episode = animeLobby.animeDetails.episodes.find((ep) => ep.id == episode)
+}
+
+function getMaxQuality(sources) {
+    var minQuality = '360p'
+    var chooseSource = sources[0]
+    sources.forEach((source) => {
+        if(source.quality == '480p') chooseSource = source;
+        if(source.quality == '720p') chooseSource = source;
+        if(source.quality == '1080p') chooseSource = source;
+    })
+    console.log(chooseSource)
+    return chooseSource;
 }
 
 server.listen(PORT, () => console.log(`Listen to ${PORT}`))

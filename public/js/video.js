@@ -23,8 +23,8 @@ $(document).ready(function() {
         })
 
         socket.on('change', (videoEp) => {
-            if(!videoEp.streamUrl.endsWith('mp4')) changeSource(videoEp.streamUrl)
-            else video.currentSrc = videoEp.streamUrl;
+            if(!videoEp.animeStreamUrl.endsWith('mp4')) changeSource(videoEp.animeStreamUrl)
+            else video.currentSrc = videoEp.animeStreamUrl;
             animeShowInfo = videoEp.episode;
             $('.loading')[0].classList.add('show')
         })
@@ -85,6 +85,8 @@ function getTimeStamps(video) {
 
             $('.skip-button').click(() => video.currentTime = introTimestamp.end)
 
+            console.log(introTimestamp)
+            
             var interval = setInterval(() => {
                 if(introTimestamp.start - 2 < video.currentTime && introTimestamp.end > video.currentTime) {
                     $('.skip-button')[0].classList.add('show')

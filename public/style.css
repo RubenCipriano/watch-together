@@ -49,6 +49,7 @@ video {
     width: 100%;
     margin: 0;
     position: relative;
+    row-gap: 30px;
 }
 
 .container-fluid {
@@ -230,9 +231,10 @@ a.active {
     align-items: center;
     text-decoration: none;
     transition: 0.5s;
-    left: 50%;
     padding: 35px;
     animation: MoveUpDown 1s infinite alternate;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
 .down-arrow > .fa-arrow-down {
