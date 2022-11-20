@@ -43,18 +43,6 @@ $(document).ready(function() {
 })
 
 function getTimeStamps(video) {
-    console.log(`query TimeStampIdSearch {
-        searchEpisodes(search:"${animeShowInfo.title}", limit:1) {
-            timestamps {
-                at
-                type {
-                    id
-                    name
-                }
-            }
-        }
-    }`)
-
     var data = JSON.stringify({
         query: `query TimeStampIdSearch {
             searchEpisodes(search:"${animeShowInfo.title}", limit:1, sort: "createdAt") {
